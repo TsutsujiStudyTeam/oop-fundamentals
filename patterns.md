@@ -1,162 +1,83 @@
-# Patterns & Techniques: OOP Design
+# パターン集 — 本には書いてないオブジェクト指向
 
-## UML Class Relationships
+著者の「手筋」を適用可能な技法として整理。各項目: いつ使うか／どうやるか／トレードオフ。
 
-### Association (関連)
-**When to use**: When two classes are independent and need bidirectional reference
-- Independent objects that collaborate
-- Parts can be used in different contexts (e.g., tires across multiple bikes)
+## データ構造境界によるクラス分割
+**いつ使うか**: AとBを別クラスにすべきか迷うとき。
+**どうやるか**: 両者の属性を列挙し、「ひとかたまりとして扱いたい情報」の間に人が認識できる境界線が引けるかを見る。引けるなら別クラス、引けなければ同じクラス。処理や責務の違いは判断材料にしない。
+**トレードオフ**: 処理に着目した分割より初期の設計工数はかかるが、分割に規則性が生まれ保守性が上がる。
 
-**How**: Draw a line with arrows on both ends; include cardinality
-- Specify how many instances can relate (1:1, 1:many, many:many)
+## 動詞クラス検出と役割化
+**いつ使うか**: クラス名候補を決めるとき、既存コードをレビューするとき。
+**どうやるか**: 名前を動詞に戻せるか（送信→送信する、Controller→制御する）を確認。戻せるなら処理の共通化が目的なので、(a) その処理が扱うデータ構造を持つクラスに吸収するか、(b) 役割として Interface にする。
+**トレードオフ**: （派生）既存の「〜Manager」「〜Service」（原典の Controller/Sender/Receiver の現代的対応語）を解体すると大量のクラスが出てくる。小粒・一山クラスが揃っていないと受け皿がない。
 
-**Why it matters**: The cardinality IS the model — without it, you lose business context
+## 役割の Interface 化（SRP の代替）
+**いつ使うか**: 1つのクラスが業務的役割（明細の一覧を扱う）とシステム的役割（RDBを読み書きする）など複数の役割を負い、SRPに従って分割せよと言われたとき。
+**どうやるか**: 役割ごとに Interface を切り、1つのクラス（受注伝票）がすべてを実現する。ある役割の処理が増えたらその Interface と実装クラスを変更し、別の役割が変わればそちらを変更する。データを持たない処理だけのクラス（RDB読み書きクラス）は切り出さない。
+**トレードオフ**: 出力媒体（RDB→テキスト→ネットワーク）が増えるたびに伝票クラスへメソッド追加が必要になる。この課題は第7章の「メディア境界での関数隠蔽」で対応する。
 
----
+## 物・結果・アプリケーションの三分類
+**いつ使うか**: 要件からクラスを抽出するとき。
+**どうやるか**: 要件中の名詞を (1) 物（マスタ的実在物）、(2) 結果（取引・行為の記録、紙の伝票、ログ、金額）に振り分ける。これに (3) アプリケーションクラス（レイアウト／プログラム／メイン）を加える。レイアウトクラスは「情報の配置図」として物クラスの性質を持つ。
+**トレードオフ**: 「何をクラスにすべきか」より「何をクラスにしてはいけないか」（動詞クラス）から考える方が近道、と著者は述べている。
 
-## Realization / Interface Implementation (実現)
+## オブジェクト図ファースト・モデリング
+**いつ使うか**: 業務シナリオからモデルを起こすとき。
+**どうやるか**: (1) 具体的インスタンスをオブジェクト図に描く（複数ありうるものは必ず複数）→ (2) クラス名だけの分析クラス図 → (3) 属性・メソッドを加えた設計クラス図 → (4) 主要機能のシーケンス図でメソッド不足を検証。(3)と(4)は往復してよい。
+**トレードオフ**: 要件から直接クラス図を描くより手順が増えるが、明細・一覧・状態区分の見落としを防ぐ。
 
-### Interface-based Design
-**When to use**: When multiple classes need to fulfill the same "role"
-- Define behavior contract without prescribing implementation
-- Support multiple types through a common interface
+## 一件／一覧ペア
+**いつ使うか**: 要件に「複数の〜」「〜一覧」「全〜」が出たとき、RDBテーブルを設計するとき。
+**どうやるか**: 「〜一件クラス」と「〜一覧クラス」を必ず対で作る。一覧は内部に List/Map/TreeMap を持ち、一件を複数保持。ループ・集計・最大値・ソート・絞り込み・「次の〜を返す()」（Iterator）を一覧に実装。RDBなら一件に「RDBから一件取得する()」、一覧に「RDBから一覧を取得する(条件)」。
+**トレードオフ**: クラス数が倍になる。Entity自動生成ツールは一覧を作らないので自作が必要。見逃すと仕様変更が数十箇所に波及する。
 
-**How**: 
-1. Define interface with method signatures only
-2. Multiple classes implement the same interface
-3. Clients code against the interface, not concrete classes
+## ヘッダ兼明細一覧 + 独立明細一覧
+**いつ使うか**: 伝票／明細構造があり、かつ伝票横断で明細を扱う要件（「商品Aの全明細」）があるとき。
+**どうやるか**: 伝票一件 "1"→"1..*" 明細一件（伝票が明細一覧を兼ねる）に加え、伝票に依存しない明細一覧クラス "1"→"0..*" 明細一件を別に設計。明細一件は自分の伝票を返すメソッドを持つ。
+**トレードオフ**: 多重度が異なる（伝票→明細は1以上、一覧→明細は0以上）ことを図に明記する必要がある。
 
-**Example**: Vehicle interface → Car and Airplane both implement it
-- Interface defines "role" (what it does)
-- Concrete classes implement "how it does it"
+## 小粒クラス抽出
+**いつ使うか**: 文字列編集・数値計算・日付演算の関数を書きたくなったとき。privateメソッドを書きたくなったとき。
+**どうやるか**: その処理が扱う属性の組（姓+名、数値+単位、金額+通貨、長さ+幅+高さ）を属性とするクラスを定義し、処理をそのクラスの public メソッドにする。利用側は属性としてこのクラスを持ち委譲する。
+**トレードオフ**: O/Rマッパが複数カラム→1クラスのマッピングを支援しないことがある。自前マッピングを書いてでも採用する価値がある。
 
-**Trade-offs**: 
-- Adds abstraction layer
-- Enables flexibility and polymorphism
-- Prevents coupling to concrete implementations
+## 数値系クラス階層
+**いつ使うか**: 業務システムで数量・金額・税・為替を扱うとき。
+**どうやるか**: 数値（BigDecimal内包、桁数、四則演算、カンマ編集）を最上位に、数量（+単位）、金額（abstract、+通貨）← 円貨金額（+内/外税区分、消費税額を返す(日付)）／外貨金額（円貨金額に変換する(日付)）、レート、消費税率を継承で展開。日付で変わる値（レート、税率）は一覧クラスが「日付で該当値を返す」。
+**トレードオフ**: 国内専用ならば円貨金額の通貨は保存せず、外貨金額だけが通貨を持つ設計にできる。全通貨相互変換（FX）では円貨／外貨を区別しないモデルにする。
 
----
+## メディア境界での関数隠蔽
+**いつ使うか**: RDB・ネットワーク・ファイルなど別メモリ空間へオブジェクトを書き出す／読み込むとき。
+**どうやるか**: データ受け渡し処理は関数（RDBユーティリティ、JDBC、O/Rマッパ）として作ってよいが、それを呼ぶのは業務クラス自身のメソッド（受注伝票.属性値をRDBに新規で書き込む()）からのみ。プログラムクラスには業務クラスのメソッドだけを見せる。O/RマッパはRDBMSオブジェクトの代理として「委譲先」に見立てる。
+**トレードオフ**: 業務クラスがRDB知識を持つことになるが、「データ構造と処理の一体化」を優先する。層を増やすほど境界関数が増えるので層分けは最小限。
 
-## Generalization / Inheritance (汎化)
+## 小粒クラス経由の関数利用
+**いつ使うか**: 複数の小粒クラスに同じシステム的処理（スペース連結など）が重複したとき。
+**どうやるか**: 関数（StringFunctions.joinWithSpace）を作り、呼び出し元を小粒クラスに限定する運用規則を敷く。アプリ・業務クラスは小粒クラスのメソッド経由でのみ恩恵を受ける。設計は経験のある設計者が行う。
+**トレードオフ**: 関数は型さえ合えば何にでも使えるため、運用規則を守らせる統制が必要。
 
-### When to Use Inheritance
-**Pattern**: "is a" relationship for true specialization
-- Wagon and Sedan "is a" Automobile
-- Child class inherits all properties of parent
+## 最上位クラス配置
+**いつ使うか**: 複数クラスの属性を使うメソッドの置き場所を決めるとき（上下関係あり）。
+**どうやるか**: 必要な属性を辿って最上位のクラスにメソッドを置き、下位へ委譲の連鎖で処理する。ループはコレクションを持つ一覧クラスの内側に書く。最上位の集計メソッド（受注伝票.受注総額を返す()）は省略しない。
+**トレードオフ**: 委譲の連鎖で小さなメソッドが各クラスに増えるが、コレクション実装の変更が上位に波及しない。
 
-**How**: 
-1. Extract common properties into parent class
-2. Child inherits and adds specialization
-3. Can override parent behavior where needed
+## 第3のクラス（データを持つMediator）
+**いつ使うか**: 上下関係のない2クラスにまたがる処理（入荷伝票から在庫を増やす）があり、疎結合にしたいとき。
+**どうやるか**: 両クラスを属性として持つ第3のクラス（入荷在庫）を作り、そこにメソッドを置く。「仲介するだけ」ではなく「両方のデータをひとかたまりにしたクラス」として設計する。
+**トレードオフ**: 強く結びつけたい意図があるなら片方に相手を引数で渡す密結合も可。迷ったら第3のクラス。
 
-**Anti-pattern**: Using inheritance for reuse when composition would be better
-- Inheritance creates tight coupling
-- Can't change parent without affecting all children
-- "Favor composition over inheritance"
+## 実体先行の汎化（インタフェース導出）
+**いつ使うか**: インタフェースや抽象メソッドを定義したいとき。
+**どうやるか**: 設計時は実体クラスを先に洗い出して比較し、共通処理を抽出し、シグネチャを統一してからインタフェース名を決める（クラス→インタフェース）。実装時はインタフェースを先に書き、実現クラスを実装する（インタフェース→クラス）。
+**トレードオフ**: 順序の原則であって個数の原則ではない。役割として Interface にする判断は実現クラスが1つ（人間だけが従業員・ジム会員を実現）でも成立する（第3章）。
 
----
+## データ構造拡張としての継承
+**いつ使うか**: 継承を使うか迷うとき。
+**どうやるか**: 「サブクラスで追加する属性は何か?」を答える。属性が増えるなら継承（数量 = 数値 + 単位）。メソッドだけ増えるならデータ構造が同じなので別クラスにする理由がない（原典は代替策を明記していない。派生: スーパークラスに置くか、役割なら Interface を検討）。役割の付与は継承ではなく実現（第3章）。
+**トレードオフ**: 汎用コレクションクラスの継承は内部構造を熟知していないと副作用。委譲 + 例外的private との比較検討。
 
-## What NOT to Use: Aggregation (集約)
-
-**Why aggregation fails**: 
-- Placebo effect (Jim Rumbaugh, one of UML's founders, said so)
-- Creates false distinction (diamond points to "owner" in has-a relationships)
-- In practice, related classes refer to each other bidirectionally
-- Cannot meaningfully distinguish which direction the "ownership" goes
-
-**Better alternative**: Use Association instead
-- Simpler, clearer semantics
-- No false distinction of ownership
-
----
-
-## Design Principle: Start with Data Structure, Not Behavior
-
-**Pattern**: Data-first design approach
-**When to use**: Always — it's the foundation of proper OOP
-
-**How**:
-1. Customer requests behavior (features, processing)
-2. Identify the DATA structure needed to support that behavior
-3. Define classes that encapsulate related data and methods
-4. Methods operate on the class's own data, not external
-
-**Why it works**: 
-- Behavior changes frequently
-- Data structure changes are rare
-- When you get data structure right, behavior flows from it
-
-**Anti-pattern**: Behavior-first design
-- Results in generic utility classes with static methods
-- Creates separation between data and processing
-- Reverts to procedural programming despite OOP language
-
----
-
-## Principle: Small-grain Classes for Reusability
-
-**Pattern**: Design classes to be reusable across contexts
-**When to use**: When maximizing code reuse and reducing duplication
-
-**How**: Make classes small and focused
-- One primary responsibility
-- Can be used independently or combined
-- Think of as "building blocks"
-
-**Example**: Instead of building application-specific classes, build small generic classes that can be reused in multiple applications
-
-**Trade-off**: Requires more thought upfront but pays off in maintenance and reuse
-
----
-
-## Principle: Method Implementation Location (2 Rules Only)
-
-### Rule 1: Place Method in the Class That Owns the Data
-**When to apply**: For any method that needs data
-- If data is in Class A, method goes in Class A
-- This keeps data and behavior together (cohesion)
-
-### Rule 2: Only 2 Cases for Where Data Belongs
-1. **Private instance data**: Only the class can access
-2. **Shared data structure**: Accessed by multiple classes
-   - NOT private methods — use public/protected
-
-**Trade-off**: 
-- Breaks traditional encapsulation (privateMethod anti-pattern)
-- Gains: higher cohesion, simpler code, true object-orientation
-
-**Anti-pattern**: Private methods that hide data
-- Data is hidden but behavior is exposed
-- Creates accidental proceduralism within an OOP context
-
----
-
-## Functions vs. Methods: Clear Boundaries
-
-**Rule**: Use functions only for stateless operations
-**When to use functions**: 
-- No access to instance state needed
-- Pure calculation or transformation
-- Utility operations
-
-**When to use methods**: Everything else
-
-**Anti-pattern**: Utility classes with static functions
-- "Forbidden!" according to this design philosophy
-- Forces thinking about relationships and data structure
-- Prevents lazy procedural thinking
-
----
-
-## Interface Hierarchies vs. Simple Interfaces
-
-**Pattern**: Use interfaces to represent roles and contracts
-**How to design**: 
-- One interface per "role" or behavior contract
-- Classes implement one or more interfaces as needed
-- Allows fine-grained polymorphism
-
-**Why not aggregation**: 
-- Interfaces already capture "has-a" through method contracts
-- No need for separate aggregation symbol
-- Cleaner model
+## privateメソッド → クラス抽出リファクタリング
+**いつ使うか**: privateメソッドを書きたくなったとき、同じ修正を2箇所に入れる羽目になったとき。
+**どうやるか**: privateメソッドの引数を属性とするクラスを作り、処理を public メソッドとして移し、元クラスは新クラスを属性に持って委譲する。パラメータなしのprivate（可読性分割）は分割をやめて流れ通りに書くか、本当に見逃しているクラスを探す。
+**トレードオフ**: 例外は再帰処理の本体と、汎用データ構造クラスを委譲で使う際の共通処理のみ。

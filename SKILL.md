@@ -1,290 +1,187 @@
 ---
 name: oop-fundamentals
-description: "Knowledge base of pragmatic Object-Oriented Programming principles from Japanese OOP framework development. Use when designing classes, understanding data structure vs. behavior, applying the 2-principle method placement rule, choosing between inheritance/composition/interfaces, or studying core OOP mental models."
+description: "『本には書いてないオブジェクト指向』（著者: ytp）の原則に従ってクラス設計・実装・レビューを行うための手順スキル。業務システムのモデリング、クラス図作成、新機能のクラス設計、既存コードのOOレビュー／リファクタリング、「このメソッドはどのクラスに置くべきか」「ユーティリティ/privateメソッドを作ってよいか」の判断時に使う。言語非依存（Java, C#, TypeScript, Python, Kotlin, Go など）。Use for: object-oriented class design, domain modeling, where to put a method, small-grain (value-like) classes, collection classes, no-utility/no-private-method rules, OO code review and refactoring."
 ---
 
-<!-- argument-hint: [chapter number, framework name, or OOP principle] -->
+<!-- argument-hint: [設計対象の要件 / レビュー対象のコードやファイル / 質問したい原則名・章番号] -->
 
-# Object-Oriented Programming Fundamentals (Japanese Context)
+# 本には書いてないオブジェクト指向 — 設計・実装スキル
 
-**Source**: "本には書いていないオブジェクト指向" (Object-Oriented Programming Not in the Books)  
-**Focus**: Pragmatic principles from Java framework design experience  
-**Chapters**: 5 | **Generated**: 2026-08-09
+このスキルは「本の要約」ではなく、**設計・実装・レビューの際に必ず踏む手順**を定める。原典（著者 ytp、Java 業務システムの経験に基づく）の原理原則を、言語を問わず適用できる形に翻訳してある。原典の根拠が必要なときだけ `chapters/` を読む。
 
-## How to Use This Skill
-
-- **Without arguments** — Load core OOP principles and decision frameworks
-- **With a chapter number** — Ask for `ch01` through `ch05`; I load that chapter's frameworks and worked examples
-- **With a topic** — Ask about `small-grain classes`, `method placement`, `inheritance`, or any OOP principle; I find and explain the relevant chapter
-- **Browse structure** — Ask "what chapters do you have?" or "index"
-
-When you ask about a topic not listed below, I read the relevant chapter and answer from first principles.
+## 絶対原則（すべての判断の根拠）
+1. **目標は「1箇所直せばみな直る」**。設計判断に迷ったら「この仕様変更は何箇所に波及するか」を問い、答えが1箇所になる案を選ぶ。
+2. **クラスとはデータ構造**。別クラスにする理由は「処理が違う」でも「責務が違う」でもなく「属性の集まり（データ構造）が違う」だけ。データ構造を持たないクラスは作らない。
+3. **共通化するのは処理ではなくデータ構造**。処理を共通化したくなったら、まずその処理が受け渡すパラメータをひとかたまりにしたクラスを探す。
+4. **責務（役割）はクラスではなく Interface**。「何ができるか」では実体は決まらない。
+5. **単位が違えば別クラス**。一件と一覧（一山）は対で作る。
+6. **禁止3点セット**: 関数（フィールドに一切触れないメソッド）、ユーティリティクラス、private メソッド。いずれも「見逃したクラスがある」兆候。禁止は安易な量産への戒めであり、Step 9 の例外を理解した上で使うのは可。
 
 ---
 
-## Core OOP Principles & Frameworks
+## ワークフロー A: 要件からの設計・実装
 
-### 1. Data Structure is the Foundation
-The single most important principle: **Classes exist to organize around data structures, not business processes.**
+新機能・新システム・新モジュールの設計を頼まれたら、**この順で**進める。要件が小さい（物・結果クラスが5個以下）ときは Step 1〜5 の成果を1つの表にまとめて提示してよいが、Step 7・9・10 は省略しない。利用者が明示的に省略を求めたステップ以外は飛ばさない。
 
-**Why this matters**: 
-- Customers request *behavior*, but behavior changes frequently
-- Data structures remain stable across system evolution
-- When data structure is right, behavior flows from it naturally
+### Step 1. オブジェクト図を描く（実例から始める）
+- 要件文に出てくる具体的なインスタンスを**2つ以上**並べて書き出す（例: 「2012年1月5日A社入荷予定 / 商品E 5個 入荷済、商品M 8個 未入荷」と「1月6日B社 ...」）。
+- 複数ありうるもの（伝票、明細、商品）は必ず複数描く。ここで「複数ある」と分かったものが一覧クラスの候補になる。
+- 時間依存の要件（経過日数、期限超過、有効期間）では**基準日（今日）のインスタンス**も描く。
+- 要件にある画面・帳票ごとに、**出力例（列名と1〜2行）**を書いておく。Step 8 で必要なメソッドがここから決まる。
+- 要件文は「システムで〜したい」という**処理（責務）の列挙**であり、そこからクラスは出てこない。実例の中の**データ**を見る。
 
-**How to apply**:
-- Before designing classes, ask: "What data must exist for this feature?"
-- Group data that naturally belongs together
-- Co-locate methods with the data they manipulate
-- Avoid separating data from behavior (which leads back to procedural programming)
-
-**Anti-pattern**: Behavior-first design
-- "The customer needs feature X"
-- → Create methods for feature X
-- → Scatter those methods across utility classes
-- → Result: procedural code in an OOP language
-
----
-
-### 2. Principles Over Patterns
-Design patterns are *derived from* underlying principles—they're useful shortcuts, not laws.
-
-**Key metaphor**: Patterns are like Go "joseki" (定石 — standard board positions)
-- Joseki are useful; experienced players memorize them
-- But behind every joseki is a strategic *principle*
-- Understanding the principle lets you handle novel situations
-
-**How to apply**:
-- Learn the 5 core principles (data structure, small-grain classes, method placement, etc.)
-- Understand *why* each pattern works
-- When facing a new design situation, apply principles to derive the right solution
-- Don't memorize patterns; memorize why they exist
-
----
-
-### 3. Small-Grain Classes for Reusability
-Create very small, focused classes representing fundamental data types and concepts.
-
-**Examples**: Amount, Quantity, Date, PersonName, Currency
-- These classes are reusable across projects and decades
-- They carry both data and operations (formatting, validation, calculation)
-- They solve the "primitive type everywhere" problem
-
-**Key benefit**: Single point of change
-- Change how amounts are formatted? Modify Amount.getFormattedDisplay() once
-- All 50 places that use amounts automatically see the change
-
-**Design rule**: Extract a small-grain class when you identify a concept that appears as data in multiple larger classes
-
----
-
-### 4. The 2 Principles of Method Implementation Location
-**Only 2 principles govern where methods should live.** All complex design questions reduce to these binary decisions.
-
-#### Principle 1: Hierarchical Containment
-When classes have a header-detail relationship (Order contains OrderLines):
-- Implement methods in the topmost class
-- Delegate downward to preserve encapsulation
-- Never expose child structure upward
-
-**Why**: Changes to storage (array → List → Map) don't break parent code
-
-#### Principle 2: Mediator Pattern for Peers
-When classes are independent (Receipt and Inventory):
-- Create a third class (ReceiptInventory) to coordinate
-- This prevents tight coupling
-- Changes to one domain don't ripple to another
-
-**Apply these consistently and your design will be maintainable.**
-
----
-
-### 5. Data Exposure, Not Method Hiding
-**Controversial rule**: Make data public/protected; don't hide it with private methods.
-
-**Rationale**:
-- Private methods hide both data AND behavior
-- Results in "encapsulation" that's actually just scattered procedural code
-- Public data + private methods is worse than public both
-
-**Better approach**:
-- Keep only 2 locations for data: (1) private instance data OR (2) shared public/protected data
-- Let multiple classes access shared data if needed
-- Put methods where they naturally belong (with the data they use)
-
-**This breaks traditional OOP dogma but produces cleaner, more maintainable code.**
-
----
-
-### 6. Interfaces Define Roles, Not Hierarchies
-An interface is a *role* multiple classes can play, not a data structure.
-
-**Key difference**:
-- **Inheritance** (is-a): Wagon *is a* Vehicle (shares data structure)
-- **Interface** (can-do): Vehicle role — Car, Bicycle, Airplane can all play it
-
-**Design rule**: 
-- Start with concrete classes
-- Observe what they have in common (roles they could play)
-- Extract the interface
-- Never design an interface before concrete classes exist
-
-**Why**: Interfaces designed in isolation miss essential operations or include irrelevant ones
-
----
-
-### 7. Avoid These Design Anti-patterns
-
-| Anti-pattern | Why It Fails | Better Approach |
+### Step 2. クラス候補を抽出し、禁止チェックをかける
+要件と実例に出てくる名詞を次に分類する。
+| 分類 | 内容 | 例 |
 |---|---|---|
-| **Utility classes** (`StringUtils.join()`) | Procedural thinking, breaks data cohesion | Put method in the class that owns the data |
-| **Inheritance for reuse** | Tight coupling, can't change parent | Use composition or extract true "is a" |
-| **Aggregation in UML** | False semantics (ownership isn't meaningful) | Use association; it's simpler and clearer |
-| **Private methods hiding data** | Accidental proceduralism in OOP | Make data accessible to classes that need it |
-| **Interface-first design** | Misses real requirements | Start with concrete classes; interface emerges |
-| **Ignoring impedance mismatch** | Forces procedural code due to DB structure | Embrace the mismatch; don't let it dictate OOP design |
+| 物クラス | 実在物として認識できるもの。マスタ | 商品、顧客、組織、通貨、日付、氏名 |
+| 結果クラス | 人やシステムが行った結果の記録。紙の伝票、取引、ログ | 受注伝票、受注明細、仕訳、アクセスログ、金額 |
+| アプリケーションクラス | レイアウト（画面・帳票の配置図）／プログラム（何を扱うか知る。ID・名称を持つ）／メイン（入口。即委譲） | 受注登録画面、受注登録プログラム、Main |
+
+**業務の動詞を名詞化する**: 要件の動詞（貸出、返却、入荷、承認）は、まずその結果の記録（貸出票、返却日と返却状態、入荷明細、承認履歴）という結果クラスに名詞化できるか試す。記録が要件にない動詞（会計する、出力する）はクラスにせず、プログラム／レイアウトクラスの名前（会計プログラム、レシートレイアウト）に残す。派生値（経過日数、遅延、合計）はクラスにせず、小粒クラスの演算結果か一覧クラスの絞り込み・集計メソッドに振り分ける。
+
+**禁止チェック**（該当したらクラスにしない）:
+- 名前を動詞に戻せる: 〜管理、〜制御、〜送信、〜表示、Controller、Sender、Receiver、（派生: Manager、Service、Helper、Util）。→ 処理が扱うデータ構造を持つクラスに吸収するか、役割として Interface にする。**例外**: レイアウト／プログラムクラスの名前に業務の動詞が含まれる（入荷伝票登録画面、返却遅延一覧プログラム）のは可。原典もそう命名している。
+- 「このクラスのデータ構造（属性）は何か?」に答えられない。→ クラスではない。
+- 責務だけで決めている（「ジュース売り」は人間でも自販機でも請け負える）。→ Interface 候補。
+
+**境界テスト**: 2つのクラス候補を分けるか迷ったら、属性の集まりの間に人が認識できる境界線が引けるかを見る（売上情報 vs 部門情報）。引けなければ同じクラス。処理には境界線は引けない。
+
+### Step 3. 単位で分解する（一件 / 一覧）
+- 業務上の単位（一伝票、一明細、一会社、一取引、一覧）を要件から拾う。単位が違えば別クラス。
+- 「複数の〜」「〜一覧」「全〜」が出たら**〜一覧クラス**を作り、一件クラスと対にする。永続化するなら一レコード／一テーブルクラスも同じ対。対にするのは**要件で複数件を検索・選択・集計するモノ**。属性としてしか現れないマスタ（部署、通貨）は一件のみでよく、省略したことを記録する。
+- ヘッダ／明細構造では、ヘッダ一件は**明細一覧クラスのインスタンスを属性に持つ**（ヘッダに生のコレクションを置かない。ヘッダ → 明細 は 1..*）。加えて、ヘッダ横断で明細を扱う要件（「商品Aの全明細」「期限超過の全明細」）があれば**独立した明細一覧クラス**も作る（一覧 → 一件 は 0..*）。独立した明細一覧は、ヘッダが持つ明細一覧と同じクラスの別インスタンスでよい。横断検索の結果を生成するメソッドは、ヘッダ一覧クラス（全明細を返す）か明細一覧クラス（条件で取得する）に置く。明細一件は自分のヘッダを返すメソッドを持つ。
+- コレクション（List、配列、dict、Map、slice）は一覧クラスの内部にだけ置き、クラス間で持ち回さない。一覧クラスにループ・集計・最大値・ソート・絞り込み・「次の〜を返す」（Iterator 相当。言語標準の反復プロトコルで可）を実装する。画面・帳票・プログラムが一覧クラスの Iterator を使って1件ずつ処理するのは可。禁止は生のコレクションを外で回すこと。
+
+### Step 4. 小粒クラスを抽出する
+- 他クラスの属性になる極小のデータ構造を探す: 数量（数値+単位）、金額（数値+通貨）、日付、氏名（姓+名）、住所、電話番号、体積（長さ+幅+高さ）。
+- **識別子（伝票番号、管理番号、社員番号）は属性1つでも小粒クラスにする**（書式・採番・比較の置き場所になる）。
+- **演算結果が別の単位になるなら、その戻り値型も小粒クラス**（日付−日付＝日数、金額×数量＝金額、長さ×幅×高さ＝体積）。
+- 兆候: 文字列編集・数値計算・日付演算・税計算の関数を書きたくなった、プリミティブ型（string、decimal、int）の引数が2つ以上並ぶ。
+- 値が時期で変わるもの（税率、為替レート、単価）は「値クラス + 一覧クラス」の対にし、一覧クラスに「日付で該当値を返す」を持たせる。それを使う計算は金額クラス側に置く（金額.消費税額を返す(日付) が税率一覧から該当日の税率を引く。外貨金額.円貨に換算する(日付) がレート一覧を引く）。計算の関数を別に作らない。
+- 日時（開始時刻、登録時刻）と日付（税率判定、期限判定）は単位が違う。日時クラスが「日付を返す()」を持ち、日付依存の計算には日付クラスを渡す。
+- **言語標準の日付型・十進数型は小粒クラスの内部表現であり、小粒クラスの代替ではない**。日付クラスが標準の日付型を内包し、書式化・日付演算のメソッドを持つ。
+- 小粒クラスは極めて汎用的に設計し、システム横断で再利用する前提にする。O/R マッパが複数カラム→1クラスのマッピングを支援しなくても、自前マッピングを書いてでも使う。
+
+### Step 5. 関連と多重度を決め、分析クラス図にする
+- クラス名と関連だけの分析クラス図を書く（Mermaid の classDiagram 推奨）。
+- 関連には**多重度を必ず書く**（省略すると業務ルールが読めない）。使う関係は関連・実現・汎化の3つ。集約は使わない。
+- 見落としやすいもの: 採番用の番号一覧クラス、ヘッダの状態と明細の状態は別クラス、一覧画面・帳票は一覧クラスを起点にする。
+- 要件にない要素（伝票番号、ヘッダ状態）は勝手に追加しない。永続化や採番が要件なら番号一覧を追加し、ヘッダの状態が要件になければ派生メソッド（すべて返却済か）で代替する。追加・省略はいずれも「仮定」として記録する。
+
+### Step 6. 役割（Interface）を汎化で導く
+- Step 5 のクラスを**並べて比較**し、共通する処理があればシグネチャを統一して Interface 名を付ける（クラス → Interface の順。先に Interface を切らない）。
+- 共通処理が見つからなければ Interface は0件でよい。無理に切らない。一覧クラス共通の「次の〜を返す」は言語標準の反復プロトコルで満たす。
+- Interface の典型: 出力先の役割（画面レイアウトと帳票レイアウトが同じ行を描画する）、永続化先の役割（ストレージ）、業務的役割（「明細の一覧を扱う」）。
+- 1つのクラスが複数の役割（業務的役割、システム的役割）を実現するのは正常。SRP を理由にデータを持たない処理クラスを切り出さない。変更は役割ごとの Interface と実装クラスに対して行う。
+- 役割名（従業員、会員）をクラスにしたくなったら、そのシステム内で「モノ=役割」が常に成立するか確認する。成立するなら便宜的省略として可、ただし省略だと自覚し記録する。
+
+### Step 7. メソッドの置き場所を決める（原則は2つ + 補助規則）
+複数クラスの属性を使うメソッドは次で決める。
+1. **上下関係がある**（ヘッダと明細、伝票と一覧） → 必要な属性を辿って**最上位のクラス**に置き、下位へ委譲の連鎖で処理する。ループはコレクションを持つ一覧クラスの中。最上位の集計メソッド（受注伝票.受注総額）は「一覧を返せば済む」と省略しない。
+2. **対等・並列** → **第3のクラス**を作る（例: 入荷伝票と在庫商品一覧 → 入荷在庫）。「仲介するだけ」にせず、両方のデータを属性として持つクラスとして設計する。強く結びつけたい意図がなければこちらを選ぶ。
+
+補助規則（原典 ch10・ch11 の例から）:
+- **下位一件が上位の属性を必要とする**（明細が伝票の返却予定日を見る）ときは、下位に「上位を返す()」を持たせて委譲する。
+- **伝票横断の一覧画面・帳票**は独立した明細一覧クラスを起点にし、絞り込みのループはそこに置く。明細から伝票情報（番号、相手先、日付）を得るには「上位を返す()」を使う。
+
+### Step 8. 設計クラス図とシーケンス確認
+- 属性とメソッドを加えた設計クラス図にする。小粒クラスには表示用メソッド（単位付き数量、書式付き日付、書式付き氏名）を持たせ、画面・帳票・バッチで共用する。
+- レイアウトクラスへはドメインオブジェクト（または一覧クラス）を渡し、表示文字列は小粒クラスの表示メソッドで得る。層をまたぐ（テンプレートエンジン、API 応答、メッセージ）場合のみ、属性だけの行構造体を**電文**として作ってよい。
+- 主要機能1〜2本のシーケンス（呼び出し連鎖）を書き、足りないメソッド（「上位を返す()」「経過日数を返す(基準日)」など）があればクラス図に戻る。全機能分を書く必要はない。
+
+### Step 9. 実装ルール（言語を問わず適用）
+- **関数禁止チェック**: メソッドがインスタンス変数にもクラス変数（static／クラス属性）にも一切触れていなければ、それは関数。引数をひとかたまりにしたクラスを作ってそこへ移す。モジュール関数・トップレベル関数・static メソッド・拡張関数はすべて同じ基準で判定する。
+- **private メソッド禁止チェック**: private（`_name`、`#name`、internal、非公開など言語相当のもの）を書きたくなったら、その引数を属性に持つクラスを作って委譲する。引数なし private で長いコードを分割するのはもっとだめ。長さの原因はクラス見逃し。
+- **隠蔽するのはフィールド**。メソッドは公開するために存在する。小粒クラスなど不変オブジェクトの読み取り専用公開フィールド（`readonly`、`val`、frozen）はアクセサメソッドの省略形として可。可変フィールドは非公開にしてメソッド経由で変更する。
+- **継承はデータ構造の拡張**にだけ使う。サブクラスで追加する属性を言えないなら継承しない。役割の付与は Interface の実現。
+- **メインと層の起点**（main、HTTP ハンドラ、メッセージ受信、CLI エントリ）は関数にならざるを得ない。ログ・エラー処理など最低限にして即プログラムクラス（業務クラス）へ委譲する。層分けは必要最小限。
+- **別メモリ空間とのデータ受け渡し**（DB、ネットワーク、ファイル、外部 API）は関数でよいが、呼ぶのは業務クラス自身のメソッド（受注伝票.保存する、受注伝票一覧.取得する）の内側から。利用側には業務クラスのメソッドだけを見せる。O/R マッパや SDK は「外部システムの代理」として委譲先に見立てる。ストレージ Interface が返す生のコレクションは一覧クラスのメソッド内でだけ受け取る。
+- **型レベルの共通処理**（文字列連結、丸め）は小粒クラスからのみ呼ぶ。業務クラスや画面から直接呼ばない。
+- **関数禁止の対象外**: コンストラクタとファクトリ（`of()`、`@classmethod` で自身を生成するもの、`New()`）、言語規約のメソッド（`toString`/`__str__`、`equals`/`__eq__`、比較）、層の境界で電文（dict、JSON、DTO）を変換する起点の処理、Comparator 相当の比較関数。
+- 言語ごとの具体的な対応（Interface の代替、static の扱い、十進数型、コレクション型、反復プロトコル）は [language-mapping.md](language-mapping.md) を参照。
+
+### Step 10. セルフレビュー
+実装前後に [cheatsheet.md](cheatsheet.md) の「兆候」表と「判断ルール」表で自己点検し、該当項目と対処を利用者に報告する。最低限の確認:
+- [ ] データ構造を持たないクラスがない
+- [ ] 動詞名のクラスがない（レイアウト／プログラム以外。あるなら Interface か吸収先を示した）
+- [ ] 「複数の〜」に一覧クラスがある。コレクションが一覧クラスの外に出ていない（ループ、内包表記、LINQ、stream、map/filter も一覧クラスの中）
+- [ ] プリミティブ型2つ以上の組、識別子、演算結果の単位が小粒クラスになっている
+- [ ] 関数・ユーティリティ・private メソッドがない（Python: モジュール関数・`@staticmethod`・`_method`、TypeScript: `utils.ts`・`#method`、Go: レシーバのフィールドを使わないメソッド、C#/Java/Kotlin: static・拡張メソッド・private）。あるなら Step 9 の例外のどれに該当するか明記した
+- [ ] 多重度がすべて書かれている
+- [ ] 複数クラスにまたがるメソッドの置き場所が2原則＋補助規則で説明できる
+- [ ] 想定される仕様変更（単位変更、書式変更、税率変更、判定条件変更、コレクション型変更）がそれぞれ1箇所の修正で済む
 
 ---
 
-### 8. Why OOP Is Hard: 3 Barriers
+## ワークフロー B: 既存コードのレビュー・リファクタリング
 
-1. **Customers request behavior, not data**
-   - You must infer the data structure
-   - Takes more upfront thought than procedural design
-   - But pays dividends in maintenance
+1. **兆候を拾う**: 〜Util／〜Helper／〜Service／〜Manager クラスやモジュール、static・モジュール関数群、private メソッド、プリミティブ型の引数列、クラス外を飛び交うコレクションや dict、上位クラス内のループ（for、内包表記、LINQ、stream）、同じ修正を2箇所に入れた履歴。言語別の兆候は language-mapping.md の末尾表。
+2. **見逃したクラスを特定する**: 各兆候について「この処理の引数／このコレクションをデータ構造とするクラスは何か」を答える。特定の順は **小粒 → 一件 → 一覧 → 第3のクラス → プログラムクラス**。コレクションや dict が層の境界（HTTP、DB、ファイル）の電文であれば、手順3で「例外（層の境界）」と明記する。
+3. **原典の原則で説明する**: 指摘ごとに「どの原則に反するか」「放置すると何の仕様変更で何箇所直すことになるか」を述べる。禁止ルールには必ず Step 9 の例外に該当するかを確認し、該当すれば「問題なし」と明記する。
+4. **リファクタリング案を提示する**: 新クラスのデータ構造（属性）→ 移すメソッド → 元クラスの委譲、の順に示す。利用側の修正が不要（または1箇所）になることを確認する。
+5. **優先順位**: 仕様変更時の波及箇所が多いものから（典型: dict／コレクションの持ち回し → 一覧クラス → 小粒クラス → 動詞クラスの解体 → private）。
 
-2. **OOP languages allow procedural coding**
-   - Java/C++ syntax supports static methods, utility classes, primitives everywhere
-   - Discipline required to maintain OOP discipline
-   - No language enforcement; it's a design choice
+**レビューの出力形式**: 次の列を持つ指摘表にまとめる。
+| 兆候（場所） | 見逃したクラス（属性） | 反する原則 | 放置時の波及（仕様変更 → 修正箇所数） | 例外該当 | リファクタ順 |
 
-3. **Relational databases don't match OOP**
-   - Impedance mismatch: tables ≠ objects
-   - O/R mappers can hide or exacerbate the mismatch
-   - Must consciously design around this tension
+## ワークフロー C: 原則の質問・参照
+原則の理由や原典の例を聞かれたら、[トピック索引](#トピック索引) から章ファイルを読んで答える。「〜してよいか」という判断質問には cheatsheet.md の判断ルールで即答し、根拠章を添える。
 
 ---
 
-### 9. The Core Value Proposition
+## 設計の出力形式
+設計を提示するときは次を含める。
+1. オブジェクト図（箇条書きでよい。基準日・出力例を含む）
+2. クラス一覧表: クラス名 / 分類（物・結果・アプリ・小粒・一覧・Interface） / 属性 / 主なメソッド
+3. クラス図（Mermaid classDiagram、多重度付き）
+4. メソッド配置の根拠（2原則＋補助規則のどれか）
+5. 禁止ルール照合結果と例外の明記、仮定（追加・省略したもの）
+6. 想定する仕様変更と修正箇所（「1箇所」になることの確認）
+7. コード（利用者の言語で。language-mapping.md に従う）
 
-| Phase | OOP | Procedural |
-|-------|-----|-----------|
-| **Initial coding** | Slower (more thought) | Faster (write quickly) |
-| **First bug fix** | Fix in one place; all fixed | Fix multiple places |
-| **Requirements change** | Extend cleanly; reuse works | Refactor everywhere |
-| **Code reuse** | Classes work in new contexts | Heavy adaptation needed |
-| **Long-term productivity** | ↑↑ (accumulating benefit) | ↓ (accumulating debt) |
-
-**Break-even point**: Typically the first major maintenance cycle or new feature that requires code reuse.
+## 言語非依存の読み替え（要点）
+| 原典（Java）の表現 | 読み替え |
+|---|---|
+| Interface | 役割を表す型。interface / Protocol / trait / 抽象基底 / 構造的型付け（TypeScript、Go）のいずれでもよい |
+| static メソッド／ユーティリティクラス | モジュール関数、トップレベル関数、companion object、名前空間関数、拡張関数も同じ「関数」として扱う |
+| private メソッド | `_` 接頭辞、`#`、`internal`、モジュール非公開関数も同じ |
+| List / Map / TreeMap | 配列、dict、slice、Map、ソート済みコレクション。いずれも一覧クラスの内部にだけ置く |
+| 「次の〜を返す()」（Iterator） | 言語標準の反復プロトコル（`__iter__`、`IEnumerable`、`Iterable`、`range` 関数）で可 |
+| BigDecimal / Calendar | 十進数型・日付型は小粒クラス（金額、日付）の内部表現。金額に浮動小数点を使わない |
+| Servlet.doPost | HTTP ハンドラ、コントローラのアクション、Lambda ハンドラ、CLI エントリ。層の起点 = 関数、即委譲 |
+| JDBC / O/R マッパ | ORM、クエリビルダ、リポジトリ実装、SDK クライアント。業務クラスのメソッド内から呼ぶ |
+詳細と言語別の実装例は [language-mapping.md](language-mapping.md)。
 
 ---
 
-### 10. UML Relationships at a Glance
-
-| Relationship | When | Example |
+## 章索引（原典の根拠が必要なときに読む）
+| # | タイトル | 主な原則 |
 |---|---|---|
-| **Association** | Mutual reference between independent classes | Bike ↔ Tires (tires can be used elsewhere) |
-| **Realization** | Class implements an interface | Car implements Vehicle role |
-| **Generalization** | True "is a" with shared data | Sedan is-a Automobile |
-| **Aggregation** | ❌ Don't use — it's a "placebo effect" | Use association instead |
+| [ch01](chapters/ch01-introduction.md) | 序論 | 1箇所直せばみな直る、定石と手筋、関連/実現/汎化、集約は使わない |
+| [ch02](chapters/ch02-class-is-data-structure.md) | クラスとはデータ構造 | データ構造が異なるから別クラス、同心円モデル |
+| [ch03](chapters/ch03-responsibility-is-not-class.md) | 責務はクラスではない | ジュース売り、従業員/ジム会員、役割=Interface、SRP批判、便宜的省略 |
+| [ch04](chapters/ch04-what-becomes-a-class.md) | クラスにするもの | 境界、動詞クラス禁止、物/結果、レイアウト/プログラム/メイン |
+| [ch05](chapters/ch05-small-grain-classes.md) | 小粒クラス | 数値系階層、金額/通貨/レート/税率、日付、体積 |
+| [ch06](chapters/ch06-one-apple-vs-a-pile.md) | リンゴ一個とリンゴ一山 | 単位、一件/一覧、一レコード/一テーブル、独立明細一覧 |
+| [ch07](chapters/ch07-no-functions-no-utility-classes.md) | 関数とユーティリティクラスは禁止 | 関数の定義、例外3つ、別メモリ空間、層の境界 |
+| [ch08](chapters/ch08-no-private-methods.md) | Privateメソッド禁止 | 氏名クラス、隠蔽対象はフィールド、例外2つ |
+| [ch09](chapters/ch09-small-grain-and-utility.md) | 小粒クラスとユーティリティ | 型レベル関数は小粒クラスからのみ |
+| [ch10](chapters/ch10-which-class-implements-method.md) | メソッドの置き場所 | 最上位クラス、ループの隠蔽、第3のクラス |
+| [ch11](chapters/ch11-business-scenario.md) | 業務シナリオで考える | オブジェクト図→分析→設計→シーケンス、見落とし3点、上位を返す() |
+| [ch12](chapters/ch12-what-is-an-interface.md) | インタフェースとは何か | 役割、クラス→IF の順、汎化 |
+| [ch13](chapters/ch13-when-to-inherit.md) | 継承の使いどころ（原典未完） | データ構造の拡張のみ |
+| [ch14](chapters/ch14-what-is-an-object-java-tutorials.md) | （参考）What Is an Object? | 状態と振る舞い、カプセル化 |
 
-**Critical**: Always specify cardinality in associations (1, 0..1, *, 1..*). The cardinality IS the model.
+## トピック索引
+- **1箇所直せばみな直る** → ch01, ch08 ／ **Comparator** → ch07 ／ **Iterator** → ch11 ／ **Mediator／第3のクラス** → ch10 ／ **O/Rマッパ** → ch05, ch07 ／ **private** → ch08 ／ **SRP** → ch03 ／ **TreeMap／ソート** → ch06
+- **アプリケーションクラス** → ch04 ／ **一件/一覧/一山** → ch06, ch09, ch10, ch11 ／ **インタフェース／役割** → ch03, ch12 ／ **オブジェクト図** → ch04, ch11 ／ **関数** → ch07, ch09 ／ **境界** → ch04 ／ **金額/通貨/レート/税率** → ch05 ／ **継承／汎化** → ch12, ch13 ／ **結果/物クラス** → ch04 ／ **小粒クラス** → ch05, ch08, ch09 ／ **採番** → ch11 ／ **状態区分** → ch11 ／ **責務** → ch03 ／ **層／電文／メイン** → ch07 ／ **多重度** → ch01, ch06 ／ **単位** → ch06 ／ **動詞クラス** → ch04 ／ **日付** → ch05 ／ **氏名** → ch08, ch09 ／ **便宜的省略** → ch03 ／ **ユーティリティ** → ch07, ch08, ch09 ／ **ループの隠蔽** → ch06, ch10
 
----
+## 補助ファイル
+- [cheatsheet.md](cheatsheet.md) — 判断ルール表、判断ツリー、例外リスト、兆候一覧（Step 10 とワークフロー B で使う）
+- [language-mapping.md](language-mapping.md) — 言語別の対応表、Python / TypeScript の実装例、言語別の兆候
+- [patterns.md](patterns.md) — 技法16件（いつ／どうやる／トレードオフ）
+- [glossary.md](glossary.md) — 用語定義
 
-## Chapter Index
-
-| Chapter | Title | Core Frameworks | Key Takeaway |
-|---------|-------|---|---|
-| [ch01](chapters/ch01-what-is-oop.md) | What is OOP? | Principles vs. Patterns, Data as foundation, Role vs. Class, UML relationships | Learn principles, not patterns |
-| [ch02](chapters/ch02-small-grain-classes.md) | Small-Grain Classes for Reusability | Atomic data types, Numeric hierarchy, Single point of change | Design reusable foundational classes |
-| [ch03](chapters/ch03-using-functions-effectively.md) | Using Functions Effectively | Function extraction rules, Implementation abstractions, Utility class dangers | Extract functions only for small-grain classes |
-| [ch04](chapters/ch04-method-implementation-location.md) | Method Implementation Location (2 Principles) | Hierarchical containment, Mediator pattern, Sequence diagrams | Two principles govern all placement decisions |
-| [ch05](chapters/ch05-interfaces-as-polymorphism.md) | Interfaces as Polymorphism | Concrete-to-abstract design, Roles vs. inheritance, Polymorphic behavior | Design interfaces from concrete classes |
-
----
-
-## Topic Index
-
-- **Abstraction** → ch01, ch05
-- **Anti-patterns** → ch01, ch02, ch03, ch04, ch05
-- **Association (UML)** → ch01
-- **Behavior vs. Data** → ch01, ch02, ch03, ch04
-- **Cardinality** → ch01
-- **Class relationships** → ch01, ch04, ch05
-- **Cohesion** → ch02, ch04
-- **Composition** → ch02, ch04, ch05
-- **Concrete-to-abstract** → ch05
-- **Data structure design** → ch01, ch02, ch03, ch04
-- **Decision trees** → cheatsheet
-- **Design patterns** → ch01, ch02, ch03, ch04, ch05
-- **Encapsulation** → ch01, ch03, ch04
-- **Functions** → ch03
-- **Generalization** → ch01, ch05
-- **Impedance mismatch** → ch01, ch03
-- **Inheritance** → ch01, ch04, ch05
-- **Interfaces** → ch01, ch05
-- **Method placement** → ch04
-- **Polymorphism** → ch01, ch05
-- **Principles** → ch01, ch02, ch03, ch04, ch05
-- **Realization** → ch01, ch05
-- **Reusability** → ch02, ch03, ch04, ch05
-- **Roles** → ch01, ch05
-- **Small-grain classes** → ch02, ch03, ch04, ch05
-- **Utility classes** → ch01, ch03
-
----
-
-## Supporting Files
-
-- [glossary.md](glossary.md) — 25+ key terms with Japanese context and chapter references
-- [patterns.md](patterns.md) — 8 design patterns and techniques with decision rules and examples
-- [cheatsheet.md](cheatsheet.md) — Quick reference tables, decision trees, anti-patterns, and design checklist
-
----
-
-## Quick Start: Ask Me About
-
-**To apply OOP right now:**
-- "How do I design classes for [my feature]?"
-- "Should I use inheritance or interfaces here?"
-- "Where should this method go?"
-- "What's wrong with utility classes?"
-
-**To understand a concept:**
-- "Explain small-grain classes"
-- "What's the impedance mismatch?"
-- "Why is encapsulation wrong when it hides data with private methods?"
-
-**To reference frameworks:**
-- "Give me the 2 method placement principles"
-- "Index" → full topic index
-- "ch03" → Chapter 3: Using Functions Effectively
-
----
-
-## Scope & Limits
-
-This skill covers OOP design principles and pragmatic patterns grounded in Java framework development experience. It's best used when:
-- ✓ Designing class hierarchies or deciding between inheritance/composition/interfaces
-- ✓ Understanding *why* design patterns work (principles over memorization)
-- ✓ Applying data-structure-first thinking to new systems
-- ✓ Resolving design conflicts (method placement, data exposure, etc.)
-- ✓ Learning OOP from first principles rather than pattern catalogs
-
-Use alongside:
-- Your language's standard library docs (syntax)
-- Project-specific requirements (business context)
-- Code review conversations (feedback and alternatives)
-
----
-
-## About the Source
-
-This skill is synthesized from "本には書いていないオブジェクト指向" (Object-Oriented Programming Not in the Books), a Japanese resource based on real Java framework development experience. The author emphasizes:
-- Pragmatism over dogma
-- Principles over patterns
-- Data structure as the foundation
-- Practical design rules learned in production systems
-
-The material is especially valuable for those who use OOP languages daily but haven't studied OOP formally from first principles.
+## 適用範囲と限界
+原典は著者が「科学的に吟味されたものではない」が「普段の仕事の中で気付いた合理性のある内容」と断る現場の原則であり、SRP 批判・private 禁止・ユーティリティ禁止など一般的な慣行と対立する。プロジェクトに既存の規約がある場合は、本スキルの指摘を「原典の原則に基づく提案」として提示し、採否は利用者に委ねる。原典のコード例は Java（2011〜2012年頃）だが、原則自体は言語に依存しない。Step 2 の動詞名詞化、Step 7 の補助規則、Step 9 の「関数禁止の対象外」は原典の例から本スキルが整理した派生規則。第13章は原典が未完。

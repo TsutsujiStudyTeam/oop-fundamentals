@@ -1,191 +1,81 @@
-# Cheatsheet: OOP Fundamentals Quick Reference
+# チートシート — 本には書いてないオブジェクト指向
 
-## Core Decision Tree: Is This Proper OOP?
+著者ならこう判断する、という決定ルール集。設計・レビュー時に手元に置く1枚。
 
-```
-Does your code focus on DATA STRUCTURE?
-  ├─ YES → Good OOP foundation
-  └─ NO → Ask "What data does this behavior need?"
+## 判断ルール（When → Do → Because）
+| 状況 | 判断 | 理由 |
+|---|---|---|
+| AとBを別クラスにすべきか迷う | 属性の集まりに境界があれば別、なければ同じ | クラスを規定するのはデータ構造のみ。処理・責務では決まらない |
+| クラス名が動詞に戻せる（〜管理、〜制御、〜er） | クラスにしない。データ構造に吸収するか Interface に。レイアウト／プログラムクラス名（〜登録画面）に業務の動詞が入るのは可 | 処理の共通化目的。共通化すべきは処理でなくデータ構造 |
+| 業務の動詞（貸出、返却、入荷）が要件に出た | その結果の記録（貸出票、返却日・返却状態、入荷明細）として結果クラスに名詞化する | 結果クラスは行為の記録 |
+| 明細が伝票の属性（返却予定日など）を必要とする | 明細に「伝票を返す()」を持たせて委譲 | 原典 ch11 の入荷明細.入荷伝票を返す() |
+| 「何をしてくれるか」から設計している | 「それをするためにどういうデータが必要か」に問いを替える | 要件は責務の列挙でデータ構造が出てこない |
+| 同じモノを複数扱う要件が出た | 「〜一覧クラス」を必ず作る。Listを持ち回さない | 一覧への処理が散らばると仕様変更が数十箇所に波及 |
+| RDBテーブルを設計した | 一レコードクラスと一テーブルクラスを対で作る | 一件／一覧の原則のRDB版 |
+| 文字列編集・税計算・日付演算の関数を書きたい | その属性の組を持つ小粒クラスを作りメソッドにする | 関数はデータ構造と処理を分離する |
+| `private` と打ちたくなった | 引数を属性とするクラスを作って委譲する | privateはクラス見逃しの検出器。隠蔽対象はフィールド |
+| 引数なしprivateで長いメソッドを分割したい | 分割せず流れ通りに書く。長さの原因はクラス見逃し | 一連の処理は1箇所にある方が可読性が高い |
+| ユーティリティクラスで共通化したい | まず小粒・一山クラスを探す。残った型レベルの処理（文字列連結等）だけを関数にし、小粒クラスからのみ呼ぶ | 機能提供目的の関数は業務無関係な属性に流用され破綻。「禁止」は安易な量産への戒め |
+| 別メモリ空間（RDB/網/ファイル）へ書く | 関数は可。ただし業務クラス自身のメソッド内から呼ぶ | 境界ではデータのみ渡せる。外からは一体化して見せる |
+| 層を増やしたい | 最小限にする | 層の境界ごとにデータと処理の分離（関数）が1つ増える |
+| 複数クラスの属性を使うメソッドの置き場 | 上下関係あり→最上位クラス。並列→第3のクラス | 原則は2つだけ |
+| 第3のクラスを作る | 両方のデータを持つクラスとして設計 | 「仲介するだけ」では処理だけのクラスになる（派生: 動詞クラス禁止と同根） |
+| main / doPost / 電文受信の起点を書く | ログ出力・エラー対応など最低限にし、即プログラムクラス（業務クラス）へ委譲 | 起点は関数にならざるを得ない。処理を置くとデータと処理が分離 |
+| for文を書く | コレクションをフィールドに持つ一覧クラスの中で | 実体（List/Map）の変更を上位に波及させない |
+| インタフェースを切りたい | 実体クラスを先に洗い出し、共通処理を抽出してから名前を決める（順序の問題。実現クラスが1つでも役割なら可） | 役割は実体を並べて初めて浮かぶ。インタフェースが先にできることはない |
+| 継承したい | 追加する属性が言えるときだけ | メソッドだけの継承はデータ構造が同じ＝原則違反 |
+| 役割（従業員、会員）を表したい | 継承でなく Interface の実現。ただしそのシステム内で「モノ=役割」が常に成立するなら役割名のクラスも可（便宜的省略と自覚する） | モノは人間だけ。役割は実体を決めない。人事システムの「従業員クラス」は設計上正しい省略 |
+| 〜一覧画面・〜一覧帳票を作る | 対応する〜一覧クラスを起点にする。伝票から明細を展開しない | 一覧データ構造への処理が分散する |
+| 状態区分が出た（未入荷/一部入荷/入荷済） | 何の状態か（伝票／明細）ごとに別クラス | 原典で伝票入荷状態と明細入荷状態は値域が異なる別クラス |
+| 要件文を読み終えた | オブジェクト図を描く。複数ありうるものは2つ以上描く | 実例を経ないと一覧・明細・採番を見落とす |
+| SRPで分割せよと言われた | 役割ごとに Interface を分け、クラスは1つのまま | 分割するとデータを持たない処理クラスが生まれる |
+| 1クラスが複数Interfaceを実現している | 正常。放置してよい | 人間が従業員でもジム会員でもあるのと同じ |
+| デザインパターンを適用したい | その定石が成り立つ手筋（データ構造と処理の一体化、1箇所直せばみな直る）を説明してから使う。説明できなければ原理原則に立ち返る | 著者はパターンを否定しない。奥の本質を理解することが大切 |
+| クラス図に関連を描く | 多重度を必ず書く。集約は使わない | 多重度なしでは業務目的が読めない。集約はプラセボ |
 
-Is the method in the class that OWNS that data?
-  ├─ YES → Method location is correct
-  └─ NO → Move method to data owner (Rule 1)
+## 判断ツリー: この名詞はクラスか?
+- 動詞に戻せる? → Yes: Interface候補 or 処理を持つべきデータ構造を探す
+- No → 実在物（マスタ）? → **物クラス**
+- No → 行為・取引の記録（伝票・仕訳・ログ）? → **結果クラス**
+- No → 画面・帳票の配置? → **レイアウトクラス**／ボタン押下で何を扱うか知る? → **プログラムクラス**
+- いずれも → 単位を確認: 一件か一覧か? → 両方作る
+- さらに → 他クラスの属性になる粒度? → **小粒クラス**として汎用設計
+- 小粒クラスの値が日付（時期）で変わる?（レート、税率、単価） → 値クラス + **一覧クラス**の対にし、一覧に「日付で該当値を返す」を持たせる
 
-Are you using utility classes or static methods extensively?
-  ├─ YES → You're doing procedural programming in an OOP language
-  └─ NO → Good — you're thinking about object relationships
+## 例外リスト（禁止ルールの許容範囲）
+| 禁止 | 例外 |
+|---|---|
+| 関数 | ① メイン関数・エントリポイント ② 異なるクラスを同一処理で扱う（外部メディアへの読み書き、比較関数） ③ 層の境界（HTTP ハンドラ、メッセージ受信など電文を受け取る起点。原典例は Servlet.doPost）。「禁止」は安易な量産への戒めで、理解した上で使う関数は問題ない。（派生）コンストラクタ・ファクトリ・言語規約メソッド（toString 等）も対象外 |
+| ユーティリティクラス (A) | 別メモリ空間とのデータ受け渡し用（DB アクセス層、ORM、SDK クライアント。原典例は RDBユーティリティ、JDBC、O/Rマッパ）: **業務クラス自身のメソッド内**から呼ぶ（受注伝票.保存する() の中）(ch07) |
+| ユーティリティクラス (B) | 型レベル（文字列等）の共通処理（原典例 StringFunctions.joinWithSpace）: **小粒クラスからのみ**呼ぶ。経験ある設計者が設計 (ch09) |
+| privateメソッド | ① 再帰処理の本体 ② 汎用データ構造クラス（標準のリスト型等。原典例は ArrayList）を継承せず委譲で使うときの共通処理 |
+| 継承 | 属性を追加する（データ構造の拡張）場合のみ推奨 |
 
-Can you change requirements in ONE PLACE and fix all occurrences?
-  ├─ YES → Good maintainability and reusability
-  └─ NO → Your data structure needs rethinking
-```
+## 著者の既定値・しきい値
+| 項目 | 既定値 |
+|---|---|
+| 数量のデフォルト単位 | 「個」 |
+| 数値クラスの内部表現 | 十進数型（Java: BigDecimal、C#: decimal、Python: Decimal 等）を数値クラスが内包する。金額に浮動小数点を使わない。標準型は小粒クラスの代替ではない |
+| 日付クラスの内部表現 | 言語標準の日付型（Java: Calendar/LocalDate、Python: date 等）を日付クラスが内包し、書式化・日付演算メソッドを持つ。グローバルならロケール考慮 |
+| 自国通貨のレート | 常に 1（自国通貨フラグで特殊処理） |
+| 伝票→明細の多重度 | 1..*（明細0件の伝票は不可） |
+| 一覧→一件の多重度 | 0..*（検索結果0件は可） |
+| 一覧クラスの必須メソッド | 次の〜を返す()（Iterator） |
+| 結合度に迷ったら | 第3のクラス（疎結合） |
+| 設計の伝達手段 | クラス図（曖昧な言葉・プログラマー任せは避ける） |
 
----
-
-## 2 Principles for Method Implementation Location
-
-| Situation | Where Method Goes | Why |
-|-----------|------------------|-----|
-| Method needs instance data | In the class that owns the data | Encapsulation + cohesion |
-| Multiple classes need same data | Public/protected data, all classes can access | Avoid private methods hiding data |
-| No instance data needed | As a static function, not a utility method | Keep it separate from objects |
-
-**Key rule**: There are only 2 valid locations for data:
-1. Private instance data (only that class accesses)
-2. Shared data structure (multiple classes access via public/protected)
-
----
-
-## When to Use Each UML Relationship
-
-| Relationship | Symbol | When to Use | Example |
-|---|---|---|---|
-| **Association** | Line with arrows both ways | Independent classes that reference each other | Bike body ↔ Tires |
-| **Realization** | Dashed line → interface | Class implements an interface | Car implements Vehicle interface |
-| **Generalization** | Triangle pointing up | "is a" inheritance | Sedan is a Automobile |
-| **Aggregation** | Diamond at owner | ❌ DON'T USE — causes confusion | (avoid this) |
-
-**Remember**: Don't use aggregation. It's a "placebo effect." Use association instead.
-
----
-
-## Inheritance vs. Composition vs. Interface
-
-| Pattern | Usage | Trade-off | Example |
-|---------|-------|-----------|---------|
-| **Inheritance** | True "is a" relationship | Creates tight coupling, hard to change parent | Wagon is a Automobile |
-| **Composition** | "has a" relationship, object contains another | More flexible, but more boilerplate | Car has Engine |
-| **Interface** | Contractual relationship, defines role | No implementation, multiple can be implemented | Vehicle (interface) |
-
-**Rule**: Prefer composition over inheritance unless true "is a" relationship exists
-
----
-
-## Why OOP Is Hard: 3 Core Barriers
-
-| Problem | Why It's Hard | Solution |
-|---------|---------------|----------|
-| **Customer requests behavior, not data structures** | You have to think about data structure that enables the behavior | Ask: "What data must exist for this behavior?" |
-| **OOP languages let you write procedurally** | Java/C++ syntax supports static methods and procedural style | Discipline: ban utility classes, ban private methods, ban static functions for business logic |
-| **RDBs are fundamentally mismatched with OOP** | Impedance mismatch: tables ≠ objects | Use proper O/R mapper or embrace mismatch in design; don't let it force procedural code |
-
----
-
-## Anti-patterns to Avoid
-
-### 1. Encapsulation via Private Methods (❌ Don't)
-**Problem**: 
-```
-class Account {
-  private data
-  private calculateInterest() { ... }  // Hidden
-}
-```
-Hides both data AND behavior. Results in procedural code in OOP context.
-
-**Fix**: Make data public/protected, put methods in right class
-
----
-
-### 2. Utility Classes with Static Methods (❌ Don't)
-**Problem**: 
-```
-class StringUtils {
-  static String capitalize(String s) { ... }
-}
-```
-Forces procedural thinking, breaks object relationships, hides data dependencies
-
-**Fix**: Ask what object should own this behavior
-
----
-
-### 3. Inheritance for Reuse (❌ Don't)
-**Problem**: 
-```
-class Employee extends Person { }  // Wrong: just for reuse
-```
-Creates tight coupling, hard to change, breaks Liskov substitution
-
-**Fix**: Use composition or extract true "is a" relationship
-
----
-
-### 4. Ignoring Data Structure (❌ Don't)
-**Problem**: Focus entirely on behavior patterns
-**Fix**: **Always start with data structure.** "1箇所直せばみな直る" (Fix it in one place, everything is fixed)
-
----
-
-## The Core Value Proposition
-
-**Upfront**: OOP takes more time initially (lower productivity coding)
-
-**Long-term**: When requirements change or reusing code:
-- ✓ Single point of change (fix data structure once)
-- ✓ High maintainability (changes propagate correctly)
-- ✓ High reusability (code works in new contexts)
-- ✓ Total productivity much higher
-
-**Break-even**: Typically by first major maintenance cycle
-
----
-
-## Design Thinking: From Principle to Pattern
-
-```
-Principles (原理原則)
-    ↓
-    Based on fundamental OOP rules and reasoning
-    ↓
-Patterns (パターン)
-    ↓
-    Named solutions applying the principles
-    ↓
-Think of patterns as Go "joseki" (定石 — standard moves)
-    ↓
-Understanding principles lets you create new patterns
-```
-
-**Key insight**: Learn principles, not just patterns.
-- Patterns are useful shortcuts
-- Principles let you innovate
-
----
-
-## UML Cardinality Quick Reference
-
-| Notation | Meaning | Example |
-|----------|---------|---------|
-| `1` | Exactly one | 1 Bike body |
-| `0..1` | Zero or one | 0..1 spare tire |
-| `*` or `0..*` | Zero or many | * Tires per bike |
-| `1..*` | One or many | 1..* Wheels per bike |
-| `1..3` | Specific range | 1..3 headlights |
-
-**Critical**: Always specify cardinality in association diagrams
-
----
-
-## Decision Rules (When in Doubt)
-
-1. **"Where should this method go?"** → In the class that owns the data it uses
-2. **"Should I use inheritance?"** → Only if true "is a" relationship; else use composition
-3. **"Should I hide this?"** → No; expose data structure, keep it consistent
-4. **"Is this proper OOP?"** → Can you change requirements in one place?
-5. **"Should I create a utility class?"** → No; it's forbidden. Find the right object to own the behavior.
-
----
-
-## Quick Principle Checklist
-
-- [ ] Data structure designed first (before methods)
-- [ ] One primary responsibility per class (cohesion)
-- [ ] Methods in class that owns the data
-- [ ] Only 2 types of data: private instance or public shared
-- [ ] No utility classes with static functions
-- [ ] No aggregation — use association instead
-- [ ] No inheritance unless true "is a"
-- [ ] Can fix bugs in one place → everything fixed
-
-**If you check all these: You're doing proper OOP**
+## 兆候（これを見たら疑え）
+| 兆候 | 見逃している可能性 |
+|---|---|
+| 文字列型の引数2つを連結するメソッド | 氏名／住所クラス |
+| 十進数型を直接足し引き・税計算 | 数値／金額／円貨金額クラス |
+| 標準の日付型・十進数型を業務クラスの属性に直接持ち、書式化や演算が利用側に散る | 日付／金額の小粒クラス |
+| コレクション型（List／配列／dict／slice）をメソッド引数・戻り値で持ち回す | X一覧クラス（層の境界の電文なら例外） |
+| 上位クラスやプログラム層にループ（for／内包表記／LINQ／stream／map・filter） | 一覧クラス内にあるべきループ |
+| 識別子（伝票番号、社員番号）が文字列・整数のまま | 番号の小粒クラス（書式・採番・比較の置き場所） |
+| 同じ修正を2箇所に入れた | privateメソッド or ユーティリティが癌 |
+| 「〜管理」「〜制御」「Controller」「Sender」「Receiver」（派生: 現代的対応語として 〜Manager、〜Service、〜Util も同類） | 動詞クラス。データ構造を持つクラスか Interface に |
+| サブクラスにフィールド追加がない | メソッドのみの継承 |
+| 要件文に「一覧」「全〜」「複数の〜」 | 一覧クラス未抽出 |
+| Entity／モデルクラスの自動生成のみで、コレクション処理が各所に | 一山クラス未作成（原典例は JPA Entity） |
+| 「乗り物で来た」的な抽象名のクラス | 役割（Interface）をクラスにしている |

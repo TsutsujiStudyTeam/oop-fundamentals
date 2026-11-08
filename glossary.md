@@ -1,43 +1,73 @@
-# Glossary: OOP Fundamentals (Japanese Context)
+# 用語集 — 本には書いてないオブジェクト指向
 
-**Abstraction (抽象化)** — Defining only the essential properties of an object, hiding unnecessary details (Ch1, Ch5)
+五十音順。英字・記号始まりは末尾。形式: **用語** — 定義（章）
 
-**Anti-pattern (アンチパターン)** — A commonly used solution that is ineffective or counterproductive (Ch1, Ch4)
+## あ行
+**アプリケーションクラス** — 物・結果に加えてアプリ本体を具現化する3種のクラス: レイアウト／プログラム／メイン（第4章）
+**一件クラス** — モノ1つ分を表すクラス。リンゴ一個に相当。RDBに永続化するものは一レコードクラスとも呼ぶ（第6章）
+**一箇所直せばみな直る（1箇所直せばみな直る）** — オブジェクト指向の利点を一言で表した本書の中核目標。保守性・再利用性の源泉（第1章、第8章）
+**一覧クラス（一山クラス）** — 同じものを複数持つクラス。リンゴ一山に相当。一件クラスを内部に複数持ち、ループ・集計・ソートを内側に閉じ込める。RDBに永続化するものは一テーブルクラスとも呼ぶ（第5章、第6章、第10章）
+**インタフェース（Interface）** — メソッドだけを規定し中身は実装者任せ。著者はこれを「役割」と呼ぶ。責務はInterfaceにする（第1章、第3章、第12章）
+**インピーダンスミスマッチ** — オブジェクトとRDBの構造的な相性の悪さ。筋の悪いO/Rマッパーで処理とデータ構造が分離する原因（第1章、第7章）
+**オブジェクト図** — 具体的インスタンスを並べた図。業務分析の出発点。複数ありうるものは必ず複数描く（第4章、第11章）
 
-**Association (関連)** — A bidirectional relationship between two independent classes in UML; represents mutual reference (Ch1)
+## か行
+**カージナリティ（多重度）** — 関連に必ず記述する。省略するとモデルが扱う業務の目的が理解できない（第1章）
+**関数** — クラス変数にもインスタンス変数にも一切アクセスしないメソッド。データ構造に依存しないので禁止。例外はメイン・異なるクラスの同一処理・層の境界。「禁止」は安易な量産への戒め（第7章、第9章）
+**関連** — 独立した2クラスが互いを参照する関係。バイク本体とタイヤ。多重度必須（第1章）
+**境界（クラスの境界）** — 情報のかたまり同士を分ける、人が認識できる線。別クラスにする根拠。処理には境界が引けない（第4章）
+**継承（拡張）** — スーパークラスのデータ構造をサブクラスが引き継ぐこと。属性を追加しないメソッドのみの継承は原則違反（第13章）
+**結果クラス** — 人間やシステムが行った結果の記録。伝票・仕訳・ログ・金額。トランザクションデータに対応（第4章）
+**小粒クラス** — 他クラスの属性として使われる粒度の極めて小さいクラス。数量・金額・日付・氏名など。極めて汎用的に設計しシステムをまたいで再利用。第8章では「小物クラス」とも呼ぶ（第5章、第8章、第9章）
 
-**Cardinality / Multiplicity (多重度)** — In UML, the number of instances that can be in a relationship (Ch1)
+## さ行
+**最上位クラス** — あるメソッドに必要な属性を辿ったとき、上下関係の一番上に当たるクラス。メソッド配置の原則1の置き場所（第10章）
+**シーケンス図** — 設計クラス図のメソッドを組み合わせて処理の流れを描く図。クラス図のメソッド不足を検証する補足手段で、全部描く必要はない（第10章、第11章）
+**実現** — インタフェースの振る舞いをクラスが実装する関係（<|..）。乗り物 ← 自動車（第1章）
+**集約** — 「has a」関係の記法。ジム・ランボー曰く「プラセボ効果」。著者は使わない（第1章）
+**上下関係／並列関係** — 2クラスの関係の2分類。ヘッダと明細のような上下関係なら最上位クラスへ、対等・並列なら第3のクラスへメソッドを置く（第10章）
+**正規化手法の延長** — 一山クラスと小粒クラスを見逃さなければ、OOモデリングは従来のRDB正規化の延長線上にあると著者は述べる（第11章コラム）
+**責務（responsibility）** — しなければならないこと・出来なければならないこと。処理を規定するだけでデータ構造は規定しない。クラスではなくInterface（第3章）
+**設計クラス図** — 属性とメソッドまで記述したクラス図。分析クラス図を洗練して作る（第11章）
+**層（Layer）** — プレゼンテーション／アプリケーション／RDBなど。境界ではオブジェクトを渡せず電文になるため関数が必要。層分けは最小限に（第7章）
 
-**Cohesion (凝集度)** — How closely related the responsibilities within a single class are; high cohesion is desirable (Ch2)
+## た行
+**第3のクラス** — 並列関係の2クラスにまたがる処理を置くために作る、両方のデータを持つクラス。入荷在庫。GoF Mediator の応用（第10章）
+**多態性（ポリモーフィズム）** — 処理の定義（名前・型・引数）が同一でも内部動作をクラスごとに替えられる機能。Javaでは abstract／Interface／override（第12章）
+**単位（業務上の）** — 業務を遂行する人がひとかたまりとして扱う大きさ。一伝票、一明細、一会社、一覧など。単位が異なれば別クラス（第6章）
+**定石と手筋** — パターン = 定石（有用な常套手段の名前）、原理原則 = 手筋（定石を産む根底）。本書は手筋を説く（第1章）
+**データ構造** — 属性（プロパティ）の集まり。構造体。「ひとかたまりとして扱いたい情報」。クラスを規定する唯一の基準（第2章、第4章）
+**データカプセル化** — 内部状態を隠しメソッド経由でのみ操作させること（第14章）
+**手形サイト（サイト）** — 手形の振り出しから支払日までの支払い猶予期間。日付クラスを拡張する属性の例（第13章）
+**電文** — 層の境界でデータ構造を渡す属性のみの形式。HTTP電文、SQL電文。電文を受け取る処理（Servlet.doPost等）は各層の起点でありメイン関数と同等（第7章）
+**伝票ヘッダ** — ある仕入れ先からのある日の入荷物全体を表す伝票本体。明細は商品単位。伝票一件は明細一覧を兼ねる（第6章）
+**同心円モデル（Fields/Methods）** — 中心に Fields（状態）、外周に Methods（振る舞い）。データ構造を持たないクラスは機能しない。隠蔽対象はフィールド（第2章、第8章、第14章）
+**動詞クラス** — 送信・受信・制御・表示・管理、Controller・Sender・Receiver など動詞由来の名前のクラス。処理の共通化が目的なので誤り。多くは役割 → Interface（第4章）
 
-**Data Structure (データ構造)** — The fundamental way data is organized in a program; prioritized in proper OOP design (Ch1, Ch3)
+## は行
+**汎化** — 実体を並べて共通部分を抽出すること。継承（<|--）の関係。「汎用化」と同義（第1章、第12章）
+**便宜的省略** — 人事システムで「人間=従業員」が常に成立するため従業員をクラスにすること。設計上正しいが、役割をクラスにした省略だと自覚する（第3章）
+**分析クラス図** — クラス名と関連のみを描いたクラス図。オブジェクト図の次に描く。一山クラス・明細・番号一覧を見落とさない（第11章）
+**プログラムクラス** — 画面・帳票・バッチプログラムを具現化。どの物・結果クラスを扱うかを知る。プログラムID・名称を持つ（第4章）
 
-**Design Pattern (デザインパターン)** — A reusable solution to a common design problem; metaphor: the "joseki" (standard moves) in Go (Ch1)
+## ま行
+**メイン関数／メインクラス** — アプリ起動の入り口。関数にならざるを得ない例外。最低限の処理でプログラムクラスに委譲（第4章、第7章）
+**メモリ空間** — オブジェクトの状態をそのまま共有できる範囲。RDBMS・OSは別メモリ空間なのでデータのみを渡す。関数例外の判定キー（第7章）
+**モノ** — データ構造（状態）を持つ実体。クラスになるもの。役割（Interface）の対概念（第3章、第12章）
+**物（モノ）クラス** — 実際に存在する物として人間が認識できるもの。商品・顧客・日付・氏名など。マスタデータに対応。結果クラスと並ぶクラスの2大分類（第4章）
 
-**Encapsulation (隠蔽)** — Bundling data and methods together, hiding internal details from outside access (Ch1)
+## や行・ら行
+**役割** — 著者によるインタフェースの呼び名。責務と同義。役割では実体を決められない（第3章、第12章）
+**ユーティリティクラス** — 関数の集まりでデータ構造を持たないクラス。原則禁止。機能提供が目的なので誤用され仕様変更で破綻。例外は別メモリ空間とのデータ受け渡し用（業務クラスのメソッド内から呼ぶ）と、型レベル共通処理（小粒クラスからのみ呼ぶ）（第7章、第8章、第9章）
+**リンゴ一個／リンゴ一山** — 単位が異なれば別クラスという原則の比喩。実システムでは一件クラス／一覧クラス（第6章、第9章）
+**レイアウトクラス** — 画面・帳票の「情報の配置図」。物クラスの性質。JSP/ASP、Excel/PDF用（第4章）
 
-**Impedance Mismatch (インピーダンスミスマッチ)** — The fundamental incompatibility between relational databases and object-oriented programming (Ch1)
-
-**Inheritance (継承)** — A relationship where one class extends another; an "is a" relationship (Ch1, Ch5)
-
-**Interface (インタフェース)** — A contract defining behavior (method signatures) that implementing classes must follow; represents a "role" (Ch1, Ch5)
-
-**Is a Relationship (is a の関係)** — An inheritance relationship expressing that one type is a subtype of another (Ch1)
-
-**Method** — A function belonging to a class; should be placed based on the two implementation principles (Ch4)
-
-**O/R Mapper (O/Rマッパー)** — Object-Relational mapping tool that bridges the gap between OOP and databases (Ch1)
-
-**Polymorphism (多態性)** — The ability for different objects to respond to the same method call in different ways (Ch1, Ch5)
-
-**Principle (原則)** — A fundamental rule guiding OOP design; contrasted with patterns which are specific solutions (Ch1)
-
-**Realization (実現)** — The relationship between an interface and the class implementing it in UML (Ch1)
-
-**Reusability (再利用性)** — The property of code components that can be used across multiple contexts (Ch2)
-
-**Small-grain Class (小粒クラス)** — A class with a single, well-defined responsibility that can be reused in many contexts (Ch2)
-
-**Utility Class (ユーティリティクラス)** — A container for unrelated static methods; considered an anti-pattern in proper OOP (Ch1)
-
-**Visibility Modifier** — Keywords (public, private, protected) controlling what can access class members (Ch3, Ch4)
+## 英字
+**Comparator／Comparable** — Comparable を実装していないオブジェクトや異なるクラスを比較するための自作 Comparator の compare() は関数。例外的に許される（第7章）
+**Iteratorパターン** — 一覧クラスが持つ「次の〜を返す()」に相当するGoFパターン。「次は存在するか」も本来必要（第11章）
+**JPA Entity** — 「リンゴ1個クラス」の自動生成物。「リンゴ1山クラス」を生成するツールは見かけず、著者は自作した（第9章コラム）
+**Mediatorパターン** — 並列関係の2クラスの間に第3のクラスを置くGoFパターン。本書では「両方のデータを持つクラス」として設計する（第10章）
+**O/Rマッパ** — JDBCの上位でRDBストレージの代理となる層。伝票クラスはこれに処理を委譲する形にする。小粒クラスをマッピングできない制限があれば自前でマッピングを書く（第5章、第7章）
+**privateメソッド** — クラス内の共通関数。作りたくなったらクラスを見逃している。隠蔽すべきはフィールド。例外は再帰処理と汎用データ構造クラスの委譲利用（第8章）
+**RDBユーティリティクラス** — 伝票などの属性値のみをRDBMSとの間で受け渡す関数群。最下層はJDBCドライバ。業務クラスの「RDBに書き込む」メソッド内から利用する（第7章）
+**SRP（単一責務の原則）** — 「変更理由が2つなら2クラスに分割」（著者の引用元: www.oodesign.com）。著者は反論: 1クラスが複数の役割（Interface）を負うのは正常。分割するとデータを持たない処理クラスが生まれる（第3章）
